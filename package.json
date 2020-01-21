@@ -1,0 +1,11 @@
+{
+  "name": "Employee-Mgmt-CL",
+  "version": "1.0.0",
+  "description": "A simple CLI application to manage roll",
+  "main": "cli.js",
+  "dependencies": {
+    "console.table": "^0.10.0",
+    "inquirer": "^6.2.1",
+    "mysql": "^2.16.0"
+  }
+}

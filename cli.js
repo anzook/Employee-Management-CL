@@ -24,56 +24,140 @@ connection.connect(function (err) {
   start();
 });
 
+
 //establish some basic getters with boolean options for id's
-function getEmployees(id=false){
-  let res ={};
+function getEmployees(id=false, cb){
+  if (typeof id !== 'boolean') {
+    cb(new Error(`Invalid argument for 'id', expected boolean, got ${typeof id}`), null);
+    return;
+  }
+
   let idQuery = "";
   if (id) {
-    idQuery = "e.id, ";
+    idQuery = "e.id, "
   }
- connection.query("SELECT" + idQuery + " CONCAT(e.first_name, \" \", e.last_name) AS name FROM employee e;",
+ connection.query("SELECT " + idQuery + " CONCAT(e.first_name, \" \", e.last_name) AS name FROM employee e;",
   function (err, results) {
-    if (err) throw err;
-   res = results;
-  })
-    return res;
+    if (err) {
+      cb(err, null)
+    } else {
+      if(!id){
+        let array = results.map( function(element){
+          return element.name;
+        });
+        cb(null, array);
+      } else {
+        let array = results.map( function(element){
+          let obj = {
+          id: element.id,
+          name: element.name
+          }
+          return obj;
+        });
+        cb(null, array);
+      }
+    }
+  }
+ )
 }
 
-function getRoles(id=false){
+function getRoles(id=false, cb){
+  if (typeof id !== 'boolean') {
+    cb(new Error(`Invalid argument for 'id', expected boolean, got ${typeof id}`), null);
+    return;
+  }
+
   let idQuery = "";
   if (id) {
-    idQuery = "r.id, ";
+    idQuery = " r.id,";
   }
- return connection.query("SELECT" + idQuery + " r.title AS name FROM role r WHERE r.id IS NOT NULL;",
-  function (err, results) {
-    if (err) throw err;
-   return results;
-  });
+connection.query("SELECT" + idQuery + " r.title AS name FROM role r WHERE r.id IS NOT NULL;",
+ function (err, results) {
+  if (err) {
+    cb(err, null)
+  } else {
+    if(!id){
+      let array = results.map( function(element){
+        return element.name;
+      });
+      cb(null, array);
+    } else {
+      let array = results.map( function(element){
+        let obj = {
+        id: element.id,
+        name: element.name
+        }
+        return obj;
+      });
+      cb(null, array);
+    }
+  }
+}
+)
 }
 
-function getDepartments(id=false){
+function getDepartments(id=false, cb){
+ if (typeof id !== 'boolean') {
+    cb(new Error(`Invalid argument for 'id', expected boolean, got ${typeof id}`), null);
+    return;
+  }
+ 
   let idQuery = "";
   if (id) {
     idQuery = "d.id, ";
   }
-  return connection.query("SELECT" + idQuery + " d.name FROM department d WHERE d.id IS NOT NULL AND d.id != \"\";",
+ connection.query("SELECT" + idQuery + " d.name FROM department d WHERE d.id IS NOT NULL AND d.id != \"\";",
   function (err, results) {
-    if (err) throw err;
-   return results;
-  });
-}
-
-function getID(name, data){
-  for (let i=0; i < data.length; i++){
-    if (name === data[i].name){
-      return data[i].id;
+    if (err) {
+      cb(err, null)
     } else {
-      return "error: id not found";
+      if(!id){
+        let array = results.map( function(element){
+          return element.name;
+        });
+        cb(null, array);
+      } else {
+        let array = results.map( function(element){
+          let obj = {
+          id: element.id,
+          name: element.name
+          }
+          return obj;
+        });
+        cb(null, array);
+      }
     }
   }
+ )
 }
 
+function getID(check, data){
+  for (let i=0; i < data.length; i++){
+    if (check === data[i].name){
+      return data[i].id;
+    }
+  }
+  return "error: id not found";
 
+}
+
+   //linked list and binary tree
+   function doABunchOfAsyncThingsInParallel(asyncFns, cb){
+    let output = [];
+    resultLength = 0
+    asyncFns.forEach( function(asyncFnktion, i){
+      asyncFnktion(function(err, result){
+        output[i] = result;
+        if (++resultLength === asyncFns.length){
+          cb(null, output);
+        }
+      })
+    })
+  }
+
+// module.exports = {
+//   getEmployees
+// }
 
 // function which prompts the user for what action they should take
 function start() {
@@ -148,6 +232,7 @@ function viewDB() {
 }
 
 function addDB() {
+  
   inquirer
     .prompt({
       name: "view",
@@ -158,53 +243,76 @@ function addDB() {
     .then(function (answer) {
       // based on their answer, either call the bid or the post functions
       if (answer.view === "Add Employee") {
-        inquirer
-        .prompt([{
-          name: "first_name",
-          type: "input",
-          message: "First name: ",
-        },
-        {
-          name: "last_name",
-          type: "input",
-          message: "Last name: ",
-        },
-        {
-          name: "role",
-          type: "list",
-          message: "Employee role: ",
-          choices: getRoles()
-        },
-        {
-          name: "manager",
-          type: "list",
-          message: "Employee manager: ",
-          choices: getEmployees()
-        }
-      ])
-        .then(function (answer) {
-        // query the database for all employees
-        connection.query("INSERT INTO employee SET ?;",
-        {
-          first_name: answer.first_name.trim(),
-          last_name: answer.last_name.trim(),
-          role_id: getID(answer.role, getRoles(true)),
-          manager_id: getID(answer.manager, getEmployees(true)) 
-        },
-          function (err, results) {
-            if (err) throw err;
-            console.log(results);
-            addDB()
+
+        doABunchOfAsyncThingsInParallel([getEmployees.bind(null,true), getRoles.bind(null,true)], function (err, [employees, roles]){
+          // console.log('employees', employees)
+          // console.log('roles', roles)
+
+          inquirer
+          .prompt([{
+            name: "first_name",
+            type: "input",
+            message: "First name: ",
+          },
+          {
+            name: "last_name",
+            type: "input",
+            message: "Last name: ",
+          },
+          {
+            name: "role",
+            type: "list",
+            message: "Employee role: ",
+            choices: function(){
+              let result = roles.map(a => a.name);
+              return result;
+            }
+          },
+          {
+            name: "manager",
+            type: "list",
+            message: "Employee manager: ",
+            choices: function(){
+              let result = employees.map(a => a.name);
+              return result;
+            }
+          }
+        ])
+          .then(function (answer) {
+              // console.log(`role_id: ${getID(answer.role, roles)}`)
+              // console.log(`manager_id: ${getID(answer.manager, employees)}`)
+          // query the database for all employees
+          connection.query("INSERT INTO employee SET ?;",
+          {
+            first_name: answer.first_name.trim(),
+            last_name: answer.last_name.trim(),
+            role_id: getID(answer.role, roles),
+            manager_id: getID(answer.manager, employees) 
+          },
+            function (err, results) {
+              if (err) throw err;
+              console.log(results);
+              addDB()
+            });
           });
-        });
-      }
+        
+        })
+    }
       else if (answer.view === "Add Department") {
+        console.log('Selected Add Department')
         // query the database for all employees
-       console.log(getEmployees());
+        getEmployees(true, function(err, employees){
+          if (err) {
+            throw err;
+          }
+          console.table(employees);
+        }
+        )
       }
       else if (answer.view === "Add Role") {
+        console.log('Selected Add Role')
         // query the database for all employees
-        console.log(getRoles(true));
+        // console.log(getRoles(true));
       } else {
         start();
       }

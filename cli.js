@@ -104,9 +104,9 @@ function getDepartments(id=false, cb){
  
   let idQuery = "";
   if (id) {
-    idQuery = "d.id, ";
+    idQuery = " d.id,";
   }
- connection.query("SELECT" + idQuery + " d.name FROM department d WHERE d.id IS NOT NULL AND d.id != \"\";",
+ connection.query("SELECT" + idQuery + " d.name FROM department d WHERE d.id IS NOT NULL;",
   function (err, results) {
     if (err) {
       cb(err, null)
@@ -139,6 +139,14 @@ function getID(check, data){
   }
   return "error: id not found";
 
+}
+function validateString(text){
+  return text !== '';
+}
+function validateNumber(num)
+{
+   var reg = /^\d+$/;
+   return reg.test(num) || "Input should be a number!";
 }
 
    //linked list and binary tree
@@ -243,7 +251,7 @@ function addDB() {
     .then(function (answer) {
       // based on their answer, either call the bid or the post functions
       if (answer.view === "Add Employee") {
-
+        console.log('Selected Add Employee')
         doABunchOfAsyncThingsInParallel([getEmployees.bind(null,true), getRoles.bind(null,true)], function (err, [employees, roles]){
           // console.log('employees', employees)
           // console.log('roles', roles)
@@ -253,11 +261,13 @@ function addDB() {
             name: "first_name",
             type: "input",
             message: "First name: ",
+            validate: validateString
           },
           {
             name: "last_name",
             type: "input",
             message: "Last name: ",
+            validate: validateString
           },
           {
             name: "role",
@@ -300,19 +310,71 @@ function addDB() {
     }
       else if (answer.view === "Add Department") {
         console.log('Selected Add Department')
-        // query the database for all employees
-        getEmployees(true, function(err, employees){
-          if (err) {
-            throw err;
-          }
-          console.table(employees);
+        inquirer
+        .prompt([{
+          name: "name",
+          type: "input",
+          message: "Department name: ",
+          validate: validateString
         }
-        )
+      ])
+        .then(function (answer) {
+        connection.query("INSERT INTO department SET ?;",
+        {
+          name: answer.name.trim()
+        },
+          function (err, results) {
+            if (err) throw err;
+            console.log(results);
+            addDB()
+          });
+        });
       }
       else if (answer.view === "Add Role") {
         console.log('Selected Add Role')
-        // query the database for all employees
-        // console.log(getRoles(true));
+        getDepartments(true, function(err, departments){
+          console.log(departments);
+          inquirer
+          .prompt([{
+            name: "title",
+            type: "input",
+            message: "Role title: ",
+            validate: validateString
+          },
+          {
+            name: "salary",
+            type: "number",
+            message: "Salary: ",
+            validate: validateNumber
+          },
+          {
+            name: "department",
+            type: "list",
+            message: "Department: ",
+            choices: function(){
+              let result = departments.map(a => a.name);
+              return result;
+            }
+          }
+        ])
+          .then(function (answer) {
+              console.log(`role_id: ${getID(answer.department, departments)}`)
+          connection.query("INSERT INTO role SET ?;",
+          {
+            title: answer.title.trim(),
+            salary: answer.salary,
+            department_id: getID(answer.department, departments)
+          },
+            function (err, results) {
+              if (err) throw err;
+              console.log(results);
+              addDB()
+            });
+          });
+        })
+        
+
+
       } else {
         start();
       }

@@ -209,7 +209,7 @@ function viewDB() {
       // based on their answer, either call the bid or the post functions
       if (answer.view === "Employees") {
         // query the database for all employees
-        connection.query("SELECT e.id, e.first_name, e.last_name, e.role_id,  e.manager_id, m.first_name, m.last_name FROM employee e INNER JOIN employee m ON e.manager_id = m.id;",
+        connection.query("SELECT e.id, e.first_name, e.last_name, e.role_id,  e.manager_id, m.first_name, m.last_name FROM employee e LEFT JOIN employee m ON e.manager_id = m.id ORDER BY e.id;",
           function (err, results) {
             if (err) throw err;
             console.table(results);
@@ -218,7 +218,7 @@ function viewDB() {
       }
       else if (answer.view === "Departments") {
         // query the database for all employees
-        connection.query("SELECT d.id, d.name, COUNT(r.id), COUNT(e.id), SUM(r.salary) FROM department d LEFT JOIN role r ON d.id = r.department_id LEFT JOIN employee e on r.id = e.role_id GROUP BY d.id;",
+        connection.query("SELECT d.id, d.name, COUNT(r.id), COUNT(e.id), SUM(r.salary) FROM department d LEFT JOIN role r ON d.id = r.department_id LEFT JOIN employee e on r.id = e.role_id GROUP BY d.id ORDER BY SUM(r.salary) DESC;",
           function (err, results) {
             if (err) throw err;
             console.table(results);
@@ -227,7 +227,7 @@ function viewDB() {
       }
       else if (answer.view === "Roles") {
         // query the database for all employees
-        connection.query("SELECT r.id, r.title, r.salary, d.name AS department FROM role r LEFT JOIN department d ON r.department_id=d.id;",
+        connection.query("SELECT r.id, r.title, r.salary, d.name AS department FROM role r LEFT JOIN department d ON r.department_id=d.id ORDER BY r.salary DESC;",
           function (err, results) {
             if (err) throw err;
             console.table(results);

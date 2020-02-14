@@ -372,8 +372,6 @@ function addDB() {
             });
           });
         })
-        
-
 
       } else {
         start();
@@ -401,13 +399,7 @@ function updateDB() {
           });
       }
       else if (answer.view === "Departments") {
-        // query the database for all employees
-        connection.query("SELECT d.id, d.name, COUNT(r.id), COUNT(e.id), SUM(r.salary) FROM department d LEFT JOIN role r ON d.id = r.department_id LEFT JOIN employee e on r.id = e.role_id GROUP BY d.id;",
-          function (err, results) {
-            if (err) throw err;
-            console.table(results);
-            viewDB()
-          });
+      
       }
       else if (answer.view === "Roles") {
         // query the database for all employees
@@ -428,37 +420,136 @@ function deleteDB() {
     .prompt({
       name: "view",
       type: "list",
-      message: "Please select your view",
+      message: "Where would you like to delete from",
       choices: ["Employees", "Departments", "Roles", "Back"]
     })
     .then(function (answer) {
       // based on their answer, either call the bid or the post functions
       if (answer.view === "Employees") {
-        // query the database for all employees
-        connection.query("SELECT e.id, e.first_name, e.last_name, e.role_id,  e.manager_id, m.first_name, m.last_name FROM employee e INNER JOIN employee m ON e.manager_id = m.id;",
-          function (err, results) {
-            if (err) throw err;
-            console.table(results);
-            viewDB()
+        console.log('Selected Deleted from Employees')
+        getEmployees(true, function(err, employees){
+          // console.log(employees);
+          inquirer
+          .prompt([
+          {
+            name: "employee",
+            type: "list",
+            message: "Delete which Employee: ",
+            choices: function(){
+              let result = employees.map(a => a.name);
+              return result;
+            }
+            },
+            {
+              name: "confirm",
+              type: "confirm",
+              message: "Confirm deletion..."
+          }
+        ])
+          .then(function (answer) {
+            if (answer.confirm) {
+          connection.query("DELETE FROM employee WHERE ?;",
+          {
+            id: getID(answer.employee, employees)
+          },
+            function (err, results) {
+              if (err){
+                console.log("Error: Cannot delete entry - ", err.sqlMessage)
+              } else {
+                console.log(results);
+              }
+              deleteDB()
+            });
+          } else {
+            console.log("Delete aborted!");
+            deleteDB()
+          }
           });
+        })
       }
       else if (answer.view === "Departments") {
-        // query the database for all employees
-        connection.query("SELECT d.id, d.name, COUNT(r.id), COUNT(e.id), SUM(r.salary) FROM department d LEFT JOIN role r ON d.id = r.department_id LEFT JOIN employee e on r.id = e.role_id GROUP BY d.id;",
-          function (err, results) {
-            if (err) throw err;
-            console.table(results);
-            viewDB()
+        console.log('Selected Deleted from Departments')
+        getDepartments(true, function(err, departments){
+          // console.log(departments);
+          inquirer
+          .prompt([
+          {
+            name: "department",
+            type: "list",
+            message: "Delete which Department: ",
+            choices: function(){
+              let result = departments.map(a => a.name);
+              return result;
+            }
+            },
+            {
+              name: "confirm",
+              type: "confirm",
+              message: "Confirm deletion..."
+          }
+        ])
+          .then(function (answer) {
+            if (answer.confirm) {
+          connection.query("DELETE FROM department WHERE ?;",
+          {
+            id: getID(answer.department, departments)
+          },
+            function (err, results) {
+              if (err){
+                console.log("Error: Cannot delete entry - ", err.sqlMessage)
+              } else {
+                console.log(results);
+              }
+              deleteDB()
+            });
+          } else {
+            console.log("Delete aborted!");
+            deleteDB()
+          }
           });
+        })
       }
       else if (answer.view === "Roles") {
-        // query the database for all employees
-        connection.query("SELECT r.id, r.title, r.salary, d.name AS department FROM role r LEFT JOIN department d ON r.department_id=d.id;",
-          function (err, results) {
-            if (err) throw err;
-            console.table(results);
-            viewDB()
+        console.log('Selected Deleted from Roles')
+        getRoles(true, function(err, roles){
+          // console.log(roles);
+          inquirer
+          .prompt([
+          {
+            name: "role",
+            type: "list",
+            message: "Delete which Role: ",
+            choices: function(){
+              let result = roles.map(a => a.name);
+              return result;
+            }
+            },
+            {
+              name: "confirm",
+              type: "confirm",
+              message: "Confirm deletion..."
+          }
+        ])
+          .then(function (answer) {
+            if (answer.confirm) {
+          connection.query("DELETE FROM role WHERE ?;",
+          {
+            id: getID(answer.role, roles)
+          },
+            function (err, results) {
+              if (err){
+                console.log("Error: Cannot delete entry - ", err.sqlMessage)
+              } else {
+                console.log(results);
+              }
+              deleteDB()
+            });
+          } else {
+            console.log("Delete aborted!");
+            deleteDB()
+          }
           });
+        })
       } else {
         start();
       }

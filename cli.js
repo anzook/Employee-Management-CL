@@ -210,8 +210,10 @@ function start() {
     });
 }
 
-//view, update, delete
+//view, update, delete sections follow similar structure
 
+
+// ***************** $VIEW menu **************************
 function viewDB() {
   inquirer
     .prompt({
@@ -225,7 +227,7 @@ function viewDB() {
       if (answer.view === "Employees") {
         // query the database for all employees
         connection.query(
-          "SELECT e.id, e.first_name, e.last_name, e.role_id,  e.manager_id, m.first_name, m.last_name FROM employee e INNER JOIN employee m ON e.manager_id = m.id ORDER BY e.id;",
+          'SELECT e.id AS ID, CONCAT(e.first_name, " ", e.last_name) AS Name, e.role_id AS RoleID, e.manager_id AS MgrID, CONCAT(m.first_name, " ", m.last_name) AS Manager FROM employee e LEFT JOIN employee m ON e.manager_id = m.id ORDER BY e.id;',
           function(err, results) {
             if (err) throw err;
             console.table(results);
@@ -235,7 +237,7 @@ function viewDB() {
       } else if (answer.view === "Departments") {
         // query the database for all employees
         connection.query(
-          "SELECT d.id, d.name, COUNT(r.id), COUNT(e.id), SUM(r.salary) FROM department d LEFT JOIN role r ON d.id = r.department_id LEFT JOIN employee e on r.id = e.role_id GROUP BY d.id ORDER BY SUM(r.salary) DESC;",
+          "SELECT d.id AS ID, d.name AS Name, COUNT(r.id) AS Total_Roles, COUNT(e.id) AS Total_Employees, SUM(r.salary) AS Total_Salary FROM department d LEFT JOIN role r ON d.id = r.department_id LEFT JOIN employee e on r.id = e.role_id GROUP BY d.id ORDER BY SUM(r.salary) DESC;",
           function(err, results) {
             if (err) throw err;
             console.table(results);
@@ -245,7 +247,7 @@ function viewDB() {
       } else if (answer.view === "Roles") {
         // query the database for all employees
         connection.query(
-          "SELECT r.id, r.title, r.salary, d.name AS department FROM role r LEFT JOIN department d ON r.department_id=d.id ORDER BY r.salary DESC;",
+          "SELECT r.id AS ID, r.title AS Title, r.salary AS Salary, d.name AS Department FROM role r LEFT JOIN department d ON r.department_id=d.id ORDER BY r.salary DESC;",
           function(err, results) {
             if (err) throw err;
             console.table(results);
@@ -258,6 +260,9 @@ function viewDB() {
     });
 }
 
+
+// ***************** $ADD menu **************************
+
 function addDB() {
   inquirer
     .prompt({
@@ -269,6 +274,8 @@ function addDB() {
     .then(function(answer) {
       if (answer.view === "Add Employee") {
         console.log("Selected Add Employee");
+
+        // ~~~~~~~~~~~~ $ADD employee ~~~~~~~~~~~~~~~~~~~~~~~
         doABunchOfAsyncThingsInParallel(
           [getEmployees.bind(null, true), getRoles.bind(null, true)],
           function(err, [employees, roles]) {
@@ -330,6 +337,8 @@ function addDB() {
           }
         );
       } else if (answer.view === "Add Department") {
+
+                // ~~~~~~~~~~~~ $ADD department ~~~~~~~~~~~~~~~~~~~~~~~
         console.log("Selected Add Department");
         inquirer
           .prompt([
@@ -354,6 +363,8 @@ function addDB() {
             );
           });
       } else if (answer.view === "Add Role") {
+
+                // ~~~~~~~~~~~~ $ADD role ~~~~~~~~~~~~~~~~~~~~~~~
         console.log("Selected Add Role");
         getDepartments(true, function(err, departments) {
           console.log(departments);
@@ -404,6 +415,8 @@ function addDB() {
     });
 }
 
+// ***************** $UPDATE menu **************************
+
 function updateDB() {
   inquirer
     .prompt({
@@ -414,6 +427,8 @@ function updateDB() {
     })
     .then(function(answer) {
         if (answer.view === "Employees") {
+
+                  // ~~~~~~~~~~~~ $UPDATE employee ~~~~~~~~~~~~~~~~~~~~~~~
           console.log("Selected Update Employee");
           doABunchOfAsyncThingsInParallel(
             [getEmployees.bind(null, true), getRoles.bind(null, true)],
@@ -497,6 +512,7 @@ function updateDB() {
                 ])
                 .then(function(answer) {
                   let queryObj = {};
+                  let managerCheck = true;
                   if (answer.empName) {
                     queryObj.first_name = answer.first_name.trim();
                     queryObj.last_name = answer.last_name.trim();
@@ -505,10 +521,15 @@ function updateDB() {
                     queryObj.role_id = getID(answer.role, roles);
                   }
                   if (answer.empManager) {
+                    if (answer.employee === answer.manager) {
+                      console.log("Error: Employee cannot be their own manager, cannot update")
+                        managerCheck = false;
+                    } else {
                     queryObj.manager_id = getID(answer.manager, employees);
                   }
+                  }
 
-                 if (!answer.empName && !answer.empRole && !answer.empManager){
+                 if (!managerCheck || !answer.empName && !answer.empRole && !answer.empManager){
                   updateDB();
 
                  } else {
@@ -533,6 +554,8 @@ function updateDB() {
 
           );
         } else if (answer.view === "Departments") {
+
+          // ~~~~~~~~~~~~ $UPDATE department ~~~~~~~~~~~~~~~~~~~~~~~
           console.log("Selected Update Departments");
           getDepartments(true, function(err, departments) {
             // console.log(departments);
@@ -580,6 +603,8 @@ function updateDB() {
           });
 
         } else if (answer.view === "Roles") {
+
+           // ~~~~~~~~~~~~ $UPDATE role ~~~~~~~~~~~~~~~~~~~~~~~
           console.log("Selected Update Roles");
             doABunchOfAsyncThingsInParallel(
             [getDepartments.bind(null, true), getRoles.bind(null, true)],
@@ -684,6 +709,8 @@ function updateDB() {
     });
 }
 
+// ***************** $DELETE menu **************************
+
 function deleteDB() {
   inquirer
     .prompt({
@@ -695,6 +722,8 @@ function deleteDB() {
     .then(function(answer) {
       // based on their answer, either call the bid or the post functions
       if (answer.view === "Employees") {
+
+         // ~~~~~~~~~~~~ $DELETE employee ~~~~~~~~~~~~~~~~~~~~~~~
         console.log("Selected Deleted from Employees");
         getEmployees(true, function(err, employees) {
           // console.log(employees);
@@ -741,6 +770,8 @@ function deleteDB() {
             });
         });
       } else if (answer.view === "Departments") {
+
+         // ~~~~~~~~~~~~ $DELETE department ~~~~~~~~~~~~~~~~~~~~~~~
         console.log("Selected Deleted from Departments");
         getDepartments(true, function(err, departments) {
           // console.log(departments);
@@ -787,6 +818,8 @@ function deleteDB() {
             });
         });
       } else if (answer.view === "Roles") {
+
+        // ~~~~~~~~~~~~ $DELETE role ~~~~~~~~~~~~~~~~~~~~~~~
         console.log("Selected Deleted from Roles");
         getRoles(true, function(err, roles) {
           // console.log(roles);
